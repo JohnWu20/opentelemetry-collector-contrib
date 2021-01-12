@@ -51,6 +51,7 @@ type Poller interface {
 	SegmentsChan() <-chan RawSegment
 	Start(receiverLongTermCtx context.Context)
 	Close() error
+	PoolChan() chan []byte
 }
 
 // RawSegment represents a raw X-Ray segment document.
@@ -59,6 +60,8 @@ type RawSegment struct {
 	Payload []byte
 	// Ctx is the short-lived context created per raw segment received
 	Ctx context.Context
+
+	ReuseBuffer []byte
 }
 
 // Config represents the configurations needed to
@@ -83,6 +86,8 @@ type poller struct {
 
 	// all segments read by the poller will be sent to this channel
 	segChan chan RawSegment
+
+	poolChan chan []byte
 }
 
 // New creates a new UDP poller
@@ -112,11 +117,17 @@ func New(cfg *Config, logger *zap.Logger) (Poller, error) {
 		maxPollerCount:       cfg.NumOfPollerToStart,
 		shutDown:             make(chan struct{}),
 		segChan:              make(chan RawSegment, segChanSize),
+		poolChan: 			  make(chan []byte, segChanSize),
 	}, nil
 }
 
 func (p *poller) Start(receiverLongTermCtx context.Context) {
 	p.receiverLongLivedCtx = receiverLongTermCtx
+
+	for i := 0; i < segChanSize; i ++{
+		p.poolChan <- make([]byte, pollerBufferSizeKB)
+	}
+
 	for i := 0; i < p.maxPollerCount; i++ {
 		p.wg.Add(1)
 		go p.poll()
@@ -130,11 +141,16 @@ func (p *poller) Close() error {
 
 	// inform the consumers of segChan that the poller is stopped
 	close(p.segChan)
+	close(p.poolChan)
 	return err
 }
 
 func (p *poller) SegmentsChan() <-chan RawSegment {
 	return p.segChan
+}
+
+func (p *poller) PoolChan() chan []byte{
+	return p.poolChan
 }
 
 func (p *poller) read(buf *[]byte) (int, error) {
@@ -154,9 +170,9 @@ func (p *poller) read(buf *[]byte) (int, error) {
 	return 0, fmt.Errorf("read from UDP socket: %w", &recvErr.ErrRecoverable{Err: err})
 }
 
+
 func (p *poller) poll() {
 	defer p.wg.Done()
-	buffer := make([]byte, pollerBufferSizeKB)
 	var (
 		errRecv   *recvErr.ErrRecoverable
 		errIrrecv *recvErr.ErrIrrecoverable
@@ -167,6 +183,7 @@ func (p *poller) poll() {
 		case <-p.shutDown:
 			return
 		default:
+		case buffer := <-p.poolChan:
 			ctx := obsreport.StartTraceDataReceiveOp(
 				p.receiverLongLivedCtx,
 				p.receiverInstanceName,
@@ -208,12 +225,11 @@ func (p *poller) poll() {
 					errors.New("dropped span due to missing body that contains segment"))
 				continue
 			}
-			copybody := make([]byte, len(body))
-			copy(copybody, body)
 
 			p.segChan <- RawSegment{
-				Payload: copybody,
-				Ctx:     ctx,
+				Payload: 		body,
+				Ctx:     		ctx,
+				ReuseBuffer: 	buffer,
 			}
 		}
 	}

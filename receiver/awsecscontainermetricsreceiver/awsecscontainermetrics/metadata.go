@@ -20,6 +20,11 @@ type TaskMetadata struct {
 	TaskARN  string `json:"TaskARN,omitempty"`
 	Family   string `json:"Family,omitempty"`
 	Revision string `json:"Revision,omitempty"`
+	AvailabilityZone string `json:"AvailabilityZone,omitempty"`
+	PullStartedAt string `json:"PullStartedAt,omitempty"`
+	PullStoppedAt string `json:"PullStoppedAt,omitempty"`
+	KnownStatus string `json:"KnownStatus,omitempty"`
+	LaunchType string `json:"LaunchType,omitempty"`
 
 	Limits     Limit               `json:"Limits,omitempty"`
 	Containers []ContainerMetadata `json:"Containers,omitempty"`
@@ -33,6 +38,13 @@ type ContainerMetadata struct {
 	Image         string            `json:"Image,omitempty"`
 	Labels        map[string]string `json:"Labels,omitempty"`
 	Limits        Limit             `json:"Limits,omitempty"`
+	ImageID string `json:"ImageID,omitempty"`
+	CreatedAt string `json:"CreatedAt,omitempty"`
+	StartedAt string `json:"StartedAt,omitempty"`
+	FinishedAt string `json:"FinishedAt,omitempty"`
+	KnownStatus string `json:"KnownStatus,omitempty"`
+	ExitCode string `json:"ExitCode,omitempty"`
+
 }
 
 // Limit defines the Cpu and Memory limts

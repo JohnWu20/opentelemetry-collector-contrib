@@ -4,13 +4,15 @@ go 1.14
 
 require (
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.4
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v0.12.0
+	github.com/DataDog/sketches-go v0.0.1 // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v0.18.0
+	github.com/benbjohnson/clock v1.0.3 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.3.0
-	github.com/stretchr/testify v1.6.1
+	github.com/stretchr/testify v1.7.0
 	go.opencensus.io v0.22.4
 	go.opentelemetry.io/collector v0.11.1-0.20201006165100-07236c11fb27
-	go.opentelemetry.io/otel v0.12.0
-	go.opentelemetry.io/otel/sdk v0.12.0
+	go.opentelemetry.io/otel v0.18.0 // indirect
+	go.opentelemetry.io/otel/sdk v0.18.0
 	go.uber.org/zap v1.16.0
 	google.golang.org/api v0.32.0
 	google.golang.org/genproto v0.0.0-20200904004341-0bd0a958aa1d
